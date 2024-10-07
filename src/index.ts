@@ -576,14 +576,21 @@ async function createNewProject(
       title: "Seeding the database",
       task: async () => {
         return new Promise<void>((resolve, reject) => {
-          exec("npm run seed", { cwd: convexDir }, (error) => {
-            if (error) {
-              reject(
-                new Error(`Failed to seed the database: ${error.message}`),
-              );
-            } else {
+          const child = spawn("bun", ["run", "seed"], {
+            stdio: "inherit",
+            cwd: convexDir,
+          });
+
+          child.on("exit", (code) => {
+            if (code === 0) {
               resolve();
+            } else {
+              reject(new Error(`Database seeding failed with code ${code}`));
             }
+          });
+
+          child.on("error", (error) => {
+            reject(error);
           });
         });
       },
