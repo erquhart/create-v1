@@ -392,10 +392,6 @@ async function createNewProject(
 ): Promise<void> {
   const projectDir = projectPath || path.resolve(process.cwd(), projectName);
   const convexDir = path.join(projectDir, "packages", "backend");
-  const values: Values = {
-    convexUrl: "",
-    convexSiteUrl: "",
-  };
   logger.log(
     chalk.bold.cyan(`\n🚀 Creating a new v1 project in ${projectDir}...\n`),
   );
@@ -545,8 +541,13 @@ async function createNewProject(
         if (!fs.existsSync(configPath)) {
           throw new Error(`setup-config.json not found at ${configPath}`);
         }
+        const { convexUrl, convexSiteUrl } = await getConvexUrls(projectDir);
 
-        await setupEnvironment(projectDir, values, configPath);
+        await setupEnvironment(
+          projectDir,
+          { convexUrl, convexSiteUrl },
+          configPath,
+        );
       },
     },
     {
@@ -702,3 +703,4 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
+
