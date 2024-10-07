@@ -20,7 +20,7 @@ interface EnvVariable {
   required?: boolean;
   defaultValue?: string;
   template?: string;
-  info?: string[]; // Changed from alerts to info
+  info?: string[];
 }
 
 interface SetupStep {
@@ -29,6 +29,7 @@ interface SetupStep {
   variables: EnvVariable[];
   additionalInstructions?: string[];
   required?: boolean;
+  description?: string;
 }
 
 interface Project {
@@ -36,7 +37,7 @@ interface Project {
   envFile?: string;
   exportCommand?: string;
   importCommand?: string;
-  ignoreLogs?: string[]; // Add this line
+  ignoreLogs?: string[];
 }
 
 interface SetupConfig {
@@ -278,7 +279,12 @@ async function setupEnvironment(
 
   for (const [index, step] of config.steps.entries()) {
     customConsole.log(chalk.bold.blue(`\n📍 Step ${index + 1}: ${step.title}`));
-    customConsole.log(chalk.white(step.instructions));
+
+    if (step.description) {
+      customConsole.log(chalk.dim(`\n${step.description}`));
+    }
+
+    customConsole.log(chalk.white(`\n${step.instructions}`));
 
     if (step.additionalInstructions) {
       customConsole.log(chalk.yellow("\nℹ️  Additional Instructions:"));
@@ -307,7 +313,7 @@ async function setupEnvironment(
     }
 
     for (const variable of step.variables) {
-      customConsole.log(chalk.cyan(`\n${variable.details}`));
+      customConsole.log(chalk.cyan(`\n${variable.details}\n`));
 
       if (variable.info) {
         for (const infoItem of variable.info) {
@@ -608,8 +614,27 @@ async function createNewProject(
   console.log(chalk.white("  bun dev"));
 }
 
+function checkBunInstallation(): boolean {
+  try {
+    execSync("bun --version", { stdio: "ignore" });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 async function main() {
   console.log(chalk.bold.cyan("\n🌟 Welcome to Create v1"));
+
+  // Check for Bun installation
+  if (!checkBunInstallation()) {
+    console.error(
+      chalk.red("\n❌ Error: Bun is not installed or not in your PATH."),
+    );
+    console.log(chalk.yellow("Please install Bun before proceeding:"));
+    console.log(chalk.cyan("https://bun.sh/docs/installation"));
+    process.exit(1);
+  }
 
   const currentFileUrl = import.meta.url;
   const currentFilePath = fileURLToPath(currentFileUrl);
