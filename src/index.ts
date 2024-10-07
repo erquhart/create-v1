@@ -28,6 +28,7 @@ interface SetupStep {
   instructions: string;
   variables: EnvVariable[];
   additionalInstructions?: string[];
+  required?: boolean;
 }
 
 interface Project {
@@ -269,7 +270,6 @@ async function setupEnvironment(
     },
   };
 
-  // Rest of the function remains the same, but use customConsole instead of console
   customConsole.log(
     chalk.bold.cyan("\n🚀 Welcome to the v1 Environment Setup Wizard"),
   );
@@ -286,6 +286,24 @@ async function setupEnvironment(
         customConsole.log(chalk.yellow(`  • ${instruction}`));
       }
       customConsole.log("");
+    }
+
+    // Check if the step is optional
+    const isOptional = step.required === false;
+    if (isOptional) {
+      const { setupStep } = await inquirer.prompt<{ setupStep: boolean }>([
+        {
+          type: "confirm",
+          name: "setupStep",
+          message: "This step is optional. Would you like to set it up?",
+          default: true,
+        },
+      ]);
+
+      if (!setupStep) {
+        customConsole.log(chalk.yellow(`⏭️  Skipping ${step.title}`));
+        continue;
+      }
     }
 
     for (const variable of step.variables) {
@@ -703,4 +721,3 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
-
