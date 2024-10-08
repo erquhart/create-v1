@@ -624,6 +624,8 @@ async function createNewProject(
   console.log(chalk.cyan("\nTo start your development server:"));
   console.log(chalk.white(`  cd ${path.relative(process.cwd(), projectDir)}`));
   console.log(chalk.white("  bun dev"));
+  console.log(chalk.cyan("\nOnce the server is running, open your browser to:"));
+  console.log(chalk.white("  http://localhost:3001"));
 }
 
 function checkBunInstallation(): boolean {
