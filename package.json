@@ -1,10 +1,19 @@
 {
-  "name": "@erquhart/create-convex-v1",
-  "version": "1.0.8",
+  "name": "@convex-dev/create-v1",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/get-convex/create-v1.git"
+  },
+  "bugs": {
+    "email": "support@convex.dev",
+    "url": "https://github.com/get-convex/create-v1/issues"
+  },
+  "version": "1.0.0",
   "description": "CLI tool to create a new v1 project",
   "main": "dist/index.js",
   "bin": {
-    "create-convex-v1": "./dist/index.js"
+    "create-convex-v1": "dist/index.js"
   },
   "type": "module",
   "scripts": {
