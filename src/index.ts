@@ -3,15 +3,12 @@
 import { type ExecException, exec, execSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { dirname } from "node:path";
-import { fileURLToPath } from "node:url";
 import boxen from "boxen";
 import chalk from "chalk";
 import { program } from "commander";
 import dotenv from "dotenv";
 import inquirer from "inquirer";
 import ora, { type Ora } from "ora";
-import wrapAnsi from "wrap-ansi";
 
 interface EnvVariable {
   name: string;
@@ -87,19 +84,6 @@ function updateEnvFile(filePath: string, key: string, value: string): void {
     .join("\n");
 
   fs.writeFileSync(filePath, newContent);
-}
-
-function printBox(title: string, content: string) {
-  const wrapped = wrapAnsi(content, 60);
-  console.log(
-    boxen(wrapped, {
-      title,
-      titleAlignment: "center",
-      padding: 1,
-      margin: 1,
-      borderColor: "cyan",
-    }),
-  );
 }
 
 function createLogger() {
@@ -228,6 +212,7 @@ async function getConvexUrls(projectDir: string): Promise<{
       throw new Error("Convex URL not found in function-spec output");
     }
 
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     const convexUrl = urlMatch[1]!;
     const convexSiteUrl = convexUrl.replace("convex.cloud", "convex.site");
     console.log(chalk.green("Successfully retrieved Convex URLs:"));
@@ -415,11 +400,11 @@ async function promptToContinue(message: string): Promise<void> {
 
 async function createNewProject(
   projectName: string,
-  useDevConfig: boolean,
-  devConfigPath?: string,
-  projectPath?: string,
+  configPath: string,
+  projectPath: string,
+  branch?: string,
 ): Promise<void> {
-  const projectDir = projectPath || path.resolve(process.cwd(), projectName);
+  const projectDir = projectPath;
   const convexDir = path.join(projectDir, "packages", "backend");
   logger.log(
     chalk.bold.cyan(`\n🚀 Creating a new v1 project in ${projectDir}...\n`),
@@ -431,7 +416,7 @@ async function createNewProject(
       task: () =>
         new Promise<void>((resolve, reject) => {
           exec(
-            `bunx degit erquhart/v1-convex ${projectDir}`,
+            `bunx degit erquhart/convex-v1${branch ? `#${branch}` : ""} ${projectDir}`,
             (error: ExecException | null) => {
               if (error) reject(error);
               else resolve();
@@ -491,7 +476,6 @@ async function createNewProject(
 
           child.stderr?.on("data", (data) => {
             output += data.toString();
-            process.stderr.write(data);
 
             if (
               data
@@ -505,6 +489,8 @@ async function createNewProject(
               );
               child.kill();
               resolve();
+            } else {
+              process.stderr.write(data);
             }
           });
 
@@ -562,14 +548,6 @@ async function createNewProject(
       title: "Setting up environment variables",
       task: async (spinner: Ora) => {
         spinner.stop();
-        const configPath =
-          useDevConfig && devConfigPath
-            ? devConfigPath
-            : path.join(projectDir, "setup-config.json");
-
-        if (!fs.existsSync(configPath)) {
-          throw new Error(`setup-config.json not found at ${configPath}`);
-        }
         const { convexUrl, convexSiteUrl } = await getConvexUrls(projectDir);
 
         await setupEnvironment(
@@ -624,7 +602,9 @@ async function createNewProject(
   console.log(chalk.cyan("\nTo start your development server:"));
   console.log(chalk.white(`  cd ${path.relative(process.cwd(), projectDir)}`));
   console.log(chalk.white("  bun dev"));
-  console.log(chalk.cyan("\nOnce the server is running, open your browser to:"));
+  console.log(
+    chalk.cyan("\nOnce the server is running, open your browser to:"),
+  );
   console.log(chalk.white("  http://localhost:3001"));
 }
 
@@ -650,36 +630,37 @@ async function main() {
     process.exit(1);
   }
 
-  const currentFileUrl = import.meta.url;
-  const currentFilePath = fileURLToPath(currentFileUrl);
-  const currentDir = dirname(currentFilePath);
-
   program
     .name("create-v1")
     .description("Create a new v1 project or manage environment variables")
     .argument("[project-directory]", "Directory for the project")
-    .option("--dev", "Use development mode with local config")
+    .option("--config <path>", "Path to custom setup-config.json")
+    .option("--branch <branch>", "Branch to pull from in starter repo")
     .action(
       async (
         projectDirectory: string | undefined,
-        options: { dev?: boolean },
+        options: { config?: string | boolean; branch?: string },
       ) => {
-        const useDevConfig = options.dev ?? false;
-        let devConfigPath: string | undefined;
+        const projectDir = projectDirectory
+          ? path.resolve(process.cwd(), projectDirectory)
+          : process.cwd();
 
-        if (useDevConfig) {
-          devConfigPath = path.join(process.cwd(), "setup-config.json");
-          console.log(chalk.yellow("\n⚠️ Using development configuration"));
-          console.log(chalk.yellow(`Config path: ${devConfigPath}`));
+        const configPath = options.config
+          ? path.resolve(
+              process.cwd(),
+              options.config === true ? "setup-config.json" : options.config,
+            )
+          : path.join(projectDir, "setup-config.json");
+        if (options.config) {
+          console.log(chalk.yellow("\n⚠️ Using custom configuration"));
+          console.log(chalk.yellow(`Config path: ${configPath}`));
+        }
 
-          if (!fs.existsSync(devConfigPath)) {
-            console.error(
-              chalk.red(
-                `Error: setup-config.json not found at ${devConfigPath}`,
-              ),
-            );
-            process.exit(1);
-          }
+        if (configPath && !fs.existsSync(configPath)) {
+          console.error(
+            chalk.red(`Error: setup-config.json not found at ${configPath}`),
+          );
+          process.exit(1);
         }
 
         const { action } = await inquirer.prompt<{ action: string }>([
@@ -721,27 +702,11 @@ async function main() {
 
           await createNewProject(
             projectName,
-            useDevConfig,
-            devConfigPath,
+            configPath,
             projectPath,
+            options.branch,
           );
         } else {
-          // Manage environment variables for an existing project
-          const projectDir = projectDirectory
-            ? path.resolve(process.cwd(), projectDirectory)
-            : process.cwd();
-
-          const configPath = useDevConfig
-            ? devConfigPath!
-            : path.join(projectDir, "setup-config.json");
-
-          if (!fs.existsSync(configPath)) {
-            console.error(
-              chalk.red(`Error: setup-config.json not found at ${configPath}`),
-            );
-            process.exit(1);
-          }
-
           const { convexUrl, convexSiteUrl } = await getConvexUrls(projectDir);
           await setupEnvironment(
             projectDir,
