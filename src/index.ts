@@ -7,6 +7,7 @@ import boxen from "boxen";
 import chalk from "chalk";
 import { program } from "commander";
 import dotenv from "dotenv";
+import { execa } from "execa";
 import inquirer from "inquirer";
 import ora, { type Ora } from "ora";
 
@@ -413,16 +414,41 @@ async function createNewProject(
   const tasks = [
     {
       title: "Cloning repository",
-      task: () =>
-        new Promise<void>((resolve, reject) => {
-          exec(
+      task: async () => {
+        // Check if setup-config.json exists in the project directory
+        const projectDirExists = fs.existsSync(projectDir);
+        if (!projectDirExists) {
+          // If setup-config.json doesn't exist, proceed with cloning
+          await execa(
             `bunx degit erquhart/convex-v1${branch ? `#${branch}` : ""} ${projectDir}`,
-            (error: ExecException | null) => {
-              if (error) reject(error);
-              else resolve();
-            },
+            { shell: true },
           );
-        }),
+        }
+        try {
+          const setupConfigExists = fs.existsSync(
+            path.join(projectDir, "setup-config.json"),
+          );
+
+          if (setupConfigExists) {
+            logger.log(
+              chalk.yellow("Project already cloned. Skipping this step."),
+            );
+            return;
+          }
+        } catch (error) {
+          console.error(
+            chalk.red(
+              `Error checking for setup-config.json: ${(error as Error).message}`,
+            ),
+          );
+          logger.log(
+            chalk.yellow(
+              "Directory exists but does not contain a setup-config.json file.",
+            ),
+          );
+          process.exit(1);
+        }
+      },
     },
     {
       title: "Installing dependencies",
@@ -442,20 +468,32 @@ async function createNewProject(
       title: "Initializing git repository",
       task: () =>
         new Promise<void>((resolve, reject) => {
-          exec(
-            'git init && git add . && git commit -m "Initial commit"',
-            { cwd: projectDir },
-            (error: ExecException | null) => {
-              if (error) reject(error);
-              else resolve();
-            },
-          );
+          const isGitRepo = fs.existsSync(path.join(projectDir, ".git"));
+          if (!isGitRepo) {
+            exec(
+              'git init && git add . && git commit -m "Initial commit"',
+              { cwd: projectDir },
+              (error: ExecException | null) => {
+                if (error) reject(error);
+                else resolve();
+              },
+            );
+          } else {
+            resolve();
+          }
         }),
     },
     {
       title: "Setting up Convex backend",
       task: async (spinner: Ora) => {
         spinner.stop();
+        const isInitialized = fs.existsSync(path.join(convexDir, ".env.local"));
+        if (isInitialized) {
+          logger.log(
+            chalk.yellow("Convex already initialized. Skipping this step."),
+          );
+          return;
+        }
         await promptToContinue(
           "You'll now be guided through the Convex project setup process. This will create a new Convex project or link to an existing one.",
         );
