@@ -429,7 +429,7 @@ async function createNewProject(
           );
 
           if (setupConfigExists) {
-            logger.log(
+            console.log(
               chalk.yellow("\nProject already cloned. Skipping this step."),
             );
             return true;
@@ -440,7 +440,7 @@ async function createNewProject(
               `Error checking for setup-config.json: ${(error as Error).message}`,
             ),
           );
-          logger.log(
+          console.log(
             chalk.yellow(
               "Directory exists but does not contain a setup-config.json file.",
             ),
@@ -478,7 +478,7 @@ async function createNewProject(
               },
             );
           } else {
-            logger.log(chalk.yellow("\nGit repository already initialized."));
+            console.log(chalk.yellow("\nGit repository already initialized."));
             resolve(true);
           }
         }),
@@ -489,7 +489,7 @@ async function createNewProject(
         spinner.stop();
         const isInitialized = fs.existsSync(path.join(convexDir, ".env.local"));
         if (isInitialized) {
-          logger.log(
+          console.log(
             chalk.yellow("Convex already initialized. Skipping this step."),
           );
           return true;
@@ -591,12 +591,14 @@ async function createNewProject(
   for (const task of tasks) {
     const spinner = ora(task.title).start();
     try {
+      logger.setEnabled(false);
       const skipped = await task.task(spinner);
       if (skipped) {
         spinner.stop();
       } else {
         spinner.succeed();
       }
+      logger.setEnabled(true);
     } catch (error) {
       logger.setEnabled(true);
       spinner.fail();
