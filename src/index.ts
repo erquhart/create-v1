@@ -400,7 +400,6 @@ async function promptToContinue(message: string): Promise<void> {
 }
 
 async function createNewProject(
-  projectName: string,
   configPath: string,
   projectPath: string,
   branch?: string,
@@ -683,7 +682,7 @@ async function main() {
           ? path.resolve(process.cwd(), projectDirectory)
           : process.cwd();
 
-        const configPath = options.config
+        const customConfigPath = options.config
           ? path.resolve(
               process.cwd(),
               options.config === true ? "setup-config.json" : options.config,
@@ -691,7 +690,7 @@ async function main() {
           : path.join(projectDir, "setup-config.json");
         if (options.config) {
           console.log(chalk.yellow("\n⚠️ Using custom configuration"));
-          console.log(chalk.yellow(`Config path: ${configPath}`));
+          console.log(chalk.yellow(`Config path: ${customConfigPath}`));
         }
 
         const { action } = await inquirer.prompt<{ action: string }>([
@@ -730,15 +729,14 @@ async function main() {
             projectName = inputProjectName;
             projectPath = path.resolve(process.cwd(), projectName);
           }
+          const configPath =
+            customConfigPath || path.join(projectPath, "setup-config.json");
 
-          await createNewProject(
-            projectName,
-            configPath,
-            projectPath,
-            options.branch,
-          );
+          await createNewProject(configPath, projectPath, options.branch);
         } else {
           const { convexUrl, convexSiteUrl } = await getConvexUrls(projectDir);
+          const configPath =
+            customConfigPath || path.join(projectDir, "setup-config.json");
           await setupEnvironment(
             projectDir,
             { convexUrl, convexSiteUrl },
