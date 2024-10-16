@@ -497,50 +497,18 @@ async function createNewProject(
           "You'll now be guided through the Convex project setup process. This will create a new Convex project or link to an existing one.",
         );
 
-        return new Promise<void>((resolve, reject) => {
+        await new Promise<void>((resolve, reject) => {
           const child = spawn("npm", ["run", "setup"], {
             stdio: ["inherit", "pipe", "pipe"],
             shell: true,
             cwd: convexDir,
           });
 
-          let output = "";
-
-          child.stdout?.on("data", (data) => {
-            output += data.toString();
-            process.stdout.write(data);
-          });
-
-          child.stderr?.on("data", (data) => {
-            output += data.toString();
-
-            if (
-              data
-                .toString()
-                .includes("✖ Error: Unable to push deployment config")
-            ) {
-              console.log(
-                chalk.yellow(
-                  "\nDetected expected error. Stopping Convex setup...",
-                ),
-              );
-              child.kill();
-              resolve();
-            } else {
-              process.stderr.write(data);
-            }
-          });
-
           child.on("exit", (code) => {
             if (code === 0 || code === null) {
               resolve();
             } else {
-              console.log(
-                chalk.yellow(
-                  "\nNote: The Convex setup process exited as expected. This is normal at this stage due to missing environment variables.",
-                ),
-              );
-              resolve();
+              reject();
             }
           });
 
@@ -670,7 +638,7 @@ async function main() {
   program
     .name("create-v1")
     .description("Create a new v1 project or manage environment variables")
-    .argument("[project-directory]", "Directory for the project")
+    .argument("[project-name]", "Directory for the project")
     .option("--config <path>", "Path to custom setup-config.json")
     .option("--branch <branch>", "Branch to pull from in starter repo")
     .action(
@@ -678,17 +646,17 @@ async function main() {
         projectDirectory: string | undefined,
         options: { config?: string | boolean; branch?: string },
       ) => {
-        const projectDir = projectDirectory
+        const customProjectDir = projectDirectory
           ? path.resolve(process.cwd(), projectDirectory)
-          : process.cwd();
+          : undefined;
 
         const customConfigPath = options.config
           ? path.resolve(
               process.cwd(),
               options.config === true ? "setup-config.json" : options.config,
             )
-          : path.join(projectDir, "setup-config.json");
-        if (options.config) {
+          : undefined;
+        if (customConfigPath) {
           console.log(chalk.yellow("\n⚠️ Using custom configuration"));
           console.log(chalk.yellow(`Config path: ${customConfigPath}`));
         }
@@ -709,31 +677,29 @@ async function main() {
         ]);
 
         if (action === "create") {
-          let projectName: string;
-          let projectPath: string;
-
-          if (projectDirectory) {
-            projectPath = path.resolve(process.cwd(), projectDirectory);
-            projectName = path.basename(projectPath);
-          } else {
-            const { inputProjectName } = await inquirer.prompt<{
-              inputProjectName: string;
-            }>([
-              {
-                type: "input",
-                name: "inputProjectName",
-                message: "What is your project named?",
-                default: "my-v1-project",
-              },
-            ]);
-            projectName = inputProjectName;
-            projectPath = path.resolve(process.cwd(), projectName);
-          }
+          const projectPath =
+            customProjectDir ||
+            path.resolve(
+              process.cwd(),
+              (
+                await inquirer.prompt<{
+                  inputProjectName: string;
+                }>([
+                  {
+                    type: "input",
+                    name: "inputProjectName",
+                    message: "What is your project named?",
+                    default: "my-v1-project",
+                  },
+                ])
+              ).inputProjectName,
+            );
           const configPath =
             customConfigPath || path.join(projectPath, "setup-config.json");
 
           await createNewProject(configPath, projectPath, options.branch);
         } else {
+          const projectDir = customProjectDir || process.cwd();
           const { convexUrl, convexSiteUrl } = await getConvexUrls(projectDir);
           const configPath =
             customConfigPath || path.join(projectDir, "setup-config.json");
