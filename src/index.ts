@@ -430,9 +430,9 @@ async function createNewProject(
 
           if (setupConfigExists) {
             logger.log(
-              chalk.yellow("Project already cloned. Skipping this step."),
+              chalk.yellow("\nProject already cloned. Skipping this step."),
             );
-            return;
+            return true;
           }
         } catch (error) {
           console.error(
@@ -465,8 +465,8 @@ async function createNewProject(
     },
     {
       title: "Initializing git repository",
-      task: () =>
-        new Promise<void>((resolve, reject) => {
+      task: async () =>
+        new Promise((resolve, reject) => {
           const isGitRepo = fs.existsSync(path.join(projectDir, ".git"));
           if (!isGitRepo) {
             exec(
@@ -474,11 +474,12 @@ async function createNewProject(
               { cwd: projectDir },
               (error: ExecException | null) => {
                 if (error) reject(error);
-                else resolve();
+                else resolve(false);
               },
             );
           } else {
-            resolve();
+            logger.log(chalk.yellow("\nGit repository already initialized."));
+            resolve(true);
           }
         }),
     },
@@ -491,7 +492,7 @@ async function createNewProject(
           logger.log(
             chalk.yellow("Convex already initialized. Skipping this step."),
           );
-          return;
+          return true;
         }
         await promptToContinue(
           "You'll now be guided through the Convex project setup process. This will create a new Convex project or link to an existing one.",
@@ -499,7 +500,7 @@ async function createNewProject(
 
         await new Promise<void>((resolve, reject) => {
           const child = spawn("npm", ["run", "setup"], {
-            stdio: ["inherit", "pipe", "pipe"],
+            stdio: "inherit",
             shell: true,
             cwd: convexDir,
           });
@@ -590,15 +591,17 @@ async function createNewProject(
   for (const task of tasks) {
     const spinner = ora(task.title).start();
     try {
-      logger.setEnabled(false);
-      await task.task(spinner);
-      logger.setEnabled(true);
-      spinner.succeed();
+      const skipped = await task.task(spinner);
+      if (skipped) {
+        spinner.stop();
+      } else {
+        spinner.succeed();
+      }
     } catch (error) {
       logger.setEnabled(true);
       spinner.fail();
       logger.error(chalk.red(`Error during ${task.title.toLowerCase()}:`));
-      logger.error(error);
+      logger.error(error || "See previous logs for details");
       process.exit(1);
     }
   }
