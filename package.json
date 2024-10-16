@@ -1,6 +1,6 @@
 {
   "name": "@erquhart/create-convex-v1",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "CLI tool to create a new v1 project",
   "main": "dist/index.js",
   "bin": {
