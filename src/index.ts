@@ -694,13 +694,6 @@ async function main() {
           console.log(chalk.yellow(`Config path: ${configPath}`));
         }
 
-        if (configPath && !fs.existsSync(configPath)) {
-          console.error(
-            chalk.red(`Error: setup-config.json not found at ${configPath}`),
-          );
-          process.exit(1);
-        }
-
         const { action } = await inquirer.prompt<{ action: string }>([
           {
             type: "list",
