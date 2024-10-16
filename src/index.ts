@@ -416,37 +416,27 @@ async function createNewProject(
       task: async () => {
         // Check if setup-config.json exists in the project directory
         const projectDirExists = fs.existsSync(projectDir);
-        if (!projectDirExists) {
-          // If setup-config.json doesn't exist, proceed with cloning
-          await execa(
-            `bunx degit erquhart/convex-v1${branch ? `#${branch}` : ""} ${projectDir}`,
-            { shell: true },
-          );
-        }
-        try {
-          const setupConfigExists = fs.existsSync(
-            path.join(projectDir, "setup-config.json"),
-          );
-
-          if (setupConfigExists) {
-            console.log(
-              chalk.yellow("\nProject already cloned. Skipping this step."),
-            );
-            return true;
-          }
-        } catch (error) {
-          console.error(
-            chalk.red(
-              `Error checking for setup-config.json: ${(error as Error).message}`,
-            ),
-          );
+        if (projectDirExists) {
           console.log(
-            chalk.yellow(
-              "Directory exists but does not contain a setup-config.json file.",
-            ),
+            chalk.yellow("\nProject already cloned. Skipping this step."),
           );
-          process.exit(1);
+          return true;
         }
+        // If setup-config.json doesn't exist, proceed with cloning
+        await execa(
+          `bunx degit erquhart/convex-v1${branch ? `#${branch}` : ""} ${projectDir}`,
+          { shell: true },
+        );
+        const setupConfigExists = fs.existsSync(
+          path.join(projectDir, "setup-config.json"),
+        );
+        if (setupConfigExists) {
+          return;
+        }
+        console.error(
+          chalk.red(`${projectDir}/setup-config.json does not exist.`),
+        );
+        process.exit(1);
       },
     },
     {
