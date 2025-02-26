@@ -425,7 +425,7 @@ async function createNewProject(
         // If setup-config.json doesn't exist, proceed with cloning
         console.log(chalk.dim(`Cloning repo: get-convex/v1${branch}`));
         await execa(
-          `bunx tiged --disable-cache get-convex/v1${branch} ${projectDir}`,
+          `bunx tiged --disable-cache get-convex/v1#${branch} ${projectDir}`,
           { shell: true },
         );
         const setupConfigExists = fs.existsSync(
