@@ -199,13 +199,10 @@ async function getConvexUrls(projectDir: string): Promise<{
   }
 
   try {
-    console.log(chalk.dim("Executing 'npx convex function-spec'..."));
     const stdout = execSync("npx convex function-spec", {
       encoding: "utf-8",
       cwd: convexDir,
     }).trim();
-    console.log(chalk.dim("Raw output from convex function-spec:"));
-    console.log(chalk.dim(stdout));
 
     // Use a regular expression to extract the URL
     const urlMatch = stdout.match(/"url"\s*:\s*"(https:\/\/[^"]+)"/);
