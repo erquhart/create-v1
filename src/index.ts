@@ -424,7 +424,7 @@ async function createNewProject(
         }
         // If setup-config.json doesn't exist, proceed with cloning
         await execa(
-          `bunx degit erquhart/convex-v1${branch ? `#${branch}` : ""} ${projectDir}`,
+          `bunx degit get-convex/v1${branch ? `#${branch}` : ""} ${projectDir}`,
           { shell: true },
         );
         const setupConfigExists = fs.existsSync(
