@@ -7,7 +7,6 @@ import boxen from "boxen";
 import chalk from "chalk";
 import { program } from "commander";
 import dotenv from "dotenv";
-import { execa } from "execa";
 import inquirer from "inquirer";
 import ora, { type Ora } from "ora";
 
@@ -420,10 +419,15 @@ async function createNewProject(
           return true;
         }
         // If setup-config.json doesn't exist, proceed with cloning
-        await execa(
-          `bunx tiged --disable-cache get-convex/v1#${branch} ${projectDir}`,
-          { shell: true, verbose: "full" },
-        );
+        await new Promise<void>((resolve, reject) => {
+          exec(
+            `bunx tiged --disable-cache get-convex/v1#${branch} ${projectDir}`,
+            (error: ExecException | null) => {
+              if (error) reject(error);
+              else resolve();
+            },
+          );
+        });
         const setupConfigExists = fs.existsSync(
           path.join(projectDir, "setup-config.json"),
         );
