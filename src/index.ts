@@ -402,7 +402,7 @@ async function promptToContinue(message: string): Promise<void> {
 async function createNewProject(
   configPath: string,
   projectPath: string,
-  branch?: string,
+  branch = "main",
 ): Promise<void> {
   const projectDir = projectPath;
   const convexDir = path.join(projectDir, "packages", "backend");
@@ -423,8 +423,9 @@ async function createNewProject(
           return true;
         }
         // If setup-config.json doesn't exist, proceed with cloning
+        console.log(chalk.dim(`Cloning repo: get-convex/v1${branch}`));
         await execa(
-          `bunx tiged --disable-cache get-convex/v1${branch ? `#${branch}` : ""} ${projectDir}`,
+          `bunx tiged --disable-cache get-convex/v1${branch} ${projectDir}`,
           { shell: true },
         );
         const setupConfigExists = fs.existsSync(
@@ -619,6 +620,8 @@ function checkBunInstallation(): boolean {
 
 async function main() {
   console.log(chalk.bold.cyan("\n🌟 Welcome to Create v1"));
+  // print a low key line with the current version
+  console.log(chalk.dim(`v${process.env.npm_package_version}`));
 
   // Check for Bun installation
   if (!checkBunInstallation()) {
@@ -687,7 +690,7 @@ async function main() {
                     default: "my-v1-project",
                   },
                 ])
-              ).inputProjectName,
+              ).inputProjectName || ".",
             );
           const configPath =
             customConfigPath || path.join(projectPath, "setup-config.json");
