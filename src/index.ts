@@ -422,7 +422,6 @@ async function createNewProject(
         // If setup-config.json doesn't exist, proceed with cloning
         await execa(
           `bunx tiged --disable-cache get-convex/v1#${branch} ${projectDir}`,
-          { shell: true },
         );
         const setupConfigExists = fs.existsSync(
           path.join(projectDir, "setup-config.json"),
