@@ -423,7 +423,6 @@ async function createNewProject(
           return true;
         }
         // If setup-config.json doesn't exist, proceed with cloning
-        console.log(chalk.dim(`Cloning repo: get-convex/v1${branch}`));
         await execa(
           `bunx tiged --disable-cache get-convex/v1#${branch} ${projectDir}`,
           { shell: true },
@@ -620,8 +619,6 @@ function checkBunInstallation(): boolean {
 
 async function main() {
   console.log(chalk.bold.cyan("\n🌟 Welcome to Create v1"));
-  // print a low key line with the current version
-  console.log(chalk.dim(`v${process.env.npm_package_version}`));
 
   // Check for Bun installation
   if (!checkBunInstallation()) {
