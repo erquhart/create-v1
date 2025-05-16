@@ -62,7 +62,7 @@ function loadConfig(configPath: string): SetupConfig {
     return config;
   } catch (error) {
     console.error(
-      chalk.red(`Error loading config file: ${(error as Error).message}`),
+      chalk.red(`Error loading config file: ${(error as Error).message}`)
     );
     process.exit(1);
   }
@@ -112,7 +112,7 @@ const logger = createLogger();
 async function getExistingValue(
   projects: Project[],
   variable: EnvVariable,
-  projectDir: string,
+  projectDir: string
 ): Promise<string | undefined> {
   for (const projectId of variable.projects) {
     const project = projects.find((p) => p.id === projectId);
@@ -130,7 +130,7 @@ async function getExistingValue(
           {
             encoding: "utf-8",
             cwd: convexDir,
-          },
+          }
         ).trim();
 
         if (value) return value;
@@ -157,7 +157,7 @@ async function updateProjectValue(
   project: Project,
   key: string,
   value: string,
-  projectDir: string,
+  projectDir: string
 ): Promise<string | undefined> {
   if (project.envFile) {
     const envFilePath = path.join(projectDir, project.envFile);
@@ -172,7 +172,7 @@ async function updateProjectValue(
         project.exportCommand
           .replace("{{name}}", key)
           .replace("{{value}}", value),
-        { stdio: "inherit", cwd: convexDir },
+        { stdio: "inherit", cwd: convexDir }
       );
     } catch (error) {
       console.error(`Failed to export value for ${key} to ${project.id}`);
@@ -191,8 +191,8 @@ async function getConvexUrls(projectDir: string): Promise<{
   if (!fs.existsSync(convexDir)) {
     console.error(
       chalk.red(
-        `Error: 'packages/backend' directory not found in ${projectDir}`,
-      ),
+        `Error: 'packages/backend' directory not found in ${projectDir}`
+      )
     );
     process.exit(1);
   }
@@ -218,7 +218,7 @@ async function getConvexUrls(projectDir: string): Promise<{
     return { convexUrl, convexSiteUrl };
   } catch (error) {
     console.error(
-      chalk.red(`Failed to retrieve Convex URLs: ${(error as Error).message}`),
+      chalk.red(`Failed to retrieve Convex URLs: ${(error as Error).message}`)
     );
     process.exit(1);
   }
@@ -232,7 +232,7 @@ function shouldIgnoreLog(message: string, ignoreLogs: string[] = []): boolean {
 async function setupEnvironment(
   projectDir: string,
   values: Values,
-  configPath: string,
+  configPath: string
 ): Promise<void> {
   const config = loadConfig(configPath);
 
@@ -300,7 +300,7 @@ async function setupEnvironment(
         for (const infoItem of variable.info) {
           const processedInfo = infoItem.replace(
             /\{\{(\w+)\}\}/g,
-            (_, key) => values[key as keyof Values] || `[${key} not set]`,
+            (_, key) => values[key as keyof Values] || `[${key} not set]`
           );
           customConsole.log(
             boxen(chalk.blue(processedInfo), {
@@ -310,7 +310,7 @@ async function setupEnvironment(
               borderStyle: "round",
               title: "ℹ️  Info",
               titleAlignment: "center",
-            }),
+            })
           );
         }
       }
@@ -318,14 +318,14 @@ async function setupEnvironment(
       const existingValue = await getExistingValue(
         config.projects,
         variable,
-        projectDir,
+        projectDir
       );
       const defaultValue =
         existingValue ||
         (variable.template
           ? variable.template.replace(
               /\{\{(\w+)\}\}/g,
-              (_, key) => values[key as keyof Values] || "",
+              (_, key) => values[key as keyof Values] || ""
             )
           : variable.defaultValue);
 
@@ -355,7 +355,7 @@ async function setupEnvironment(
               project,
               variable.name,
               value,
-              projectDir,
+              projectDir
             );
             if (updatedFile) {
               updatedFiles.push(updatedFile);
@@ -380,8 +380,8 @@ async function setupEnvironment(
 
   customConsole.log(
     chalk.bold.green(
-      "\n🎉 Setup complete! Environment variables have been updated.",
-    ),
+      "\n🎉 Setup complete! Environment variables have been updated."
+    )
   );
 }
 
@@ -398,12 +398,12 @@ async function promptToContinue(message: string): Promise<void> {
 async function createNewProject(
   configPath: string,
   projectPath: string,
-  branch = "main",
+  branch = "main"
 ): Promise<void> {
   const projectDir = projectPath;
   const convexDir = path.join(projectDir, "packages", "backend");
   logger.log(
-    chalk.bold.cyan(`\n🚀 Creating a new v1 project in ${projectDir}...\n`),
+    chalk.bold.cyan(`\n🚀 Creating a new v1 project in ${projectDir}...\n`)
   );
 
   const tasks = [
@@ -411,10 +411,12 @@ async function createNewProject(
       title: "Cloning repository",
       task: async () => {
         // Check if setup-config.json exists in the project directory
-        const projectDirExists = fs.existsSync(projectDir);
+        const projectDirExists = fs.existsSync(
+          path.join(projectDir, "setup-config.json")
+        );
         if (projectDirExists) {
           console.log(
-            chalk.yellow("\nProject already cloned. Skipping this step."),
+            chalk.yellow("\nProject already cloned. Skipping this step.")
           );
           return true;
         }
@@ -425,17 +427,17 @@ async function createNewProject(
             (error: ExecException | null) => {
               if (error) reject(error);
               else resolve();
-            },
+            }
           );
         });
         const setupConfigExists = fs.existsSync(
-          path.join(projectDir, "setup-config.json"),
+          path.join(projectDir, "setup-config.json")
         );
         if (setupConfigExists) {
           return;
         }
         console.error(
-          chalk.red(`${projectDir}/setup-config.json does not exist.`),
+          chalk.red(`${projectDir}/setup-config.json does not exist.`)
         );
         process.exit(1);
       },
@@ -450,7 +452,7 @@ async function createNewProject(
             (error: ExecException | null) => {
               if (error) reject(error);
               else resolve();
-            },
+            }
           );
         }),
     },
@@ -466,7 +468,7 @@ async function createNewProject(
               (error: ExecException | null) => {
                 if (error) reject(error);
                 else resolve(false);
-              },
+              }
             );
           } else {
             console.log(chalk.yellow("\nGit repository already initialized."));
@@ -481,12 +483,12 @@ async function createNewProject(
         const isInitialized = fs.existsSync(path.join(convexDir, ".env.local"));
         if (isInitialized) {
           console.log(
-            chalk.yellow("Convex already initialized. Skipping this step."),
+            chalk.yellow("Convex already initialized. Skipping this step.")
           );
           return true;
         }
         await promptToContinue(
-          "You'll now be guided through the Convex project setup process. This will create a new Convex project or link to an existing one.",
+          "You'll now be guided through the Convex project setup process. This will create a new Convex project or link to an existing one."
         );
 
         await new Promise<void>((resolve, reject) => {
@@ -515,7 +517,7 @@ async function createNewProject(
       task: async (spinner: Ora) => {
         spinner.stop();
         await promptToContinue(
-          "You'll now be guided through the authentication setup process. This will configure authentication for your Convex project.",
+          "You'll now be guided through the authentication setup process. This will configure authentication for your Convex project."
         );
 
         return new Promise<void>((resolve, reject) => {
@@ -530,7 +532,7 @@ async function createNewProject(
               resolve();
             } else {
               reject(
-                new Error(`Authentication setup failed with code ${code}`),
+                new Error(`Authentication setup failed with code ${code}`)
               );
             }
           });
@@ -550,7 +552,7 @@ async function createNewProject(
         await setupEnvironment(
           projectDir,
           { convexUrl, convexSiteUrl },
-          configPath,
+          configPath
         );
       },
     },
@@ -604,7 +606,7 @@ async function createNewProject(
   console.log(chalk.white(`  cd ${path.relative(process.cwd(), projectDir)}`));
   console.log(chalk.white("  bun dev"));
   console.log(
-    chalk.cyan("\nOnce the server is running, open your browser to:"),
+    chalk.cyan("\nOnce the server is running, open your browser to:")
   );
   console.log(chalk.white("  http://localhost:3001"));
 }
@@ -624,7 +626,7 @@ async function main() {
   // Check for Bun installation
   if (!checkBunInstallation()) {
     console.error(
-      chalk.red("\n❌ Error: Bun is not installed or not in your PATH."),
+      chalk.red("\n❌ Error: Bun is not installed or not in your PATH.")
     );
     console.log(chalk.yellow("Please install Bun before proceeding:"));
     console.log(chalk.cyan("https://bun.sh/docs/installation"));
@@ -640,7 +642,7 @@ async function main() {
     .action(
       async (
         projectDirectory: string | undefined,
-        options: { config?: string | boolean; branch?: string },
+        options: { config?: string | boolean; branch?: string }
       ) => {
         const customProjectDir = projectDirectory
           ? path.resolve(process.cwd(), projectDirectory)
@@ -649,7 +651,7 @@ async function main() {
         const customConfigPath = options.config
           ? path.resolve(
               process.cwd(),
-              options.config === true ? "setup-config.json" : options.config,
+              options.config === true ? "setup-config.json" : options.config
             )
           : undefined;
         if (customConfigPath) {
@@ -688,7 +690,7 @@ async function main() {
                     default: "my-v1-project",
                   },
                 ])
-              ).inputProjectName || ".",
+              ).inputProjectName || "."
             );
           const configPath =
             customConfigPath || path.join(projectPath, "setup-config.json");
@@ -702,10 +704,10 @@ async function main() {
           await setupEnvironment(
             projectDir,
             { convexUrl, convexSiteUrl },
-            configPath,
+            configPath
           );
         }
-      },
+      }
     );
 
   await program.parseAsync(process.argv);
